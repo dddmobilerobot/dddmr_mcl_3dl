@@ -16,7 +16,7 @@ The following features are provided and are different from original version:
 - ROS2 version (Humble) of mcl_3dl particularly for ground vehicles.
 - Particle filter is updated based on travelling distance/rotation, so the computation are minized when robot is idling.
 - Feature selection is based on [dddmr_lego_loam_bor ](https://github.com/dddmobilerobot/dddmr_lego_loam_bor).
-- Submap concept is introduced, the computer requirement is significaly reduced, our version can be run in jetson Orin Nano on a 500mx500m map.
+- Submap concept is introduced, the computation requirement is significaly reduced, our version can localize the robot in 500mx500m map on a jetson Orin nano, larger map is also possible.
 - Particle rating mechanisms are redesigned for mobile robots, the ground point cloud is used to constraint the robot on the ground.
   - Euclidean Cluster Extraction is used to normalized the rating, we rate each particle by using clusters instead of using points. Because the far object comprise only few points, the points base rating can not effectively use this far object. Instead, our cluster-based rating will be able to compensate this situation.
   - The normal vector of features is used to normalized the rating. When the robot travels between long walls, virtual slipping will occur (the robot think it is not moving at all), the normal of the feature is tracked to compensate virtual slipping condition.
