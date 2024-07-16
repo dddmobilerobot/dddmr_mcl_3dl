@@ -1,0 +1,10 @@
+<launch>
+
+  <!--name argument is not required, because it will overwrite all node name in the exec-->
+  <node pkg="mcl_3dl" exec="pcl_publisher" output="screen" respawn="false">
+    <param from="$(find-pkg-share mcl_3dl)/config/pcl_publisher.yaml" />
+    <param name="map_dir" value="$(find-pkg-share mcl_3dl)/data/map.pcd" />
+    <param name="ground_dir" value="$(find-pkg-share mcl_3dl)/data/ground.pcd" />
+  </node>
+
+</launch>

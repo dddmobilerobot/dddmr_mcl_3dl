@@ -1,0 +1,8 @@
+<launch>
+
+  <!--name argument is not required, because it will overwrite all node name in the exec-->
+  <node pkg="mcl_3dl" exec="mcl_3dl" output="screen" respawn="false">
+    <param from="$(find-pkg-share mcl_3dl)/config/mcl_3dl.yaml" />
+  </node>
+
+</launch>

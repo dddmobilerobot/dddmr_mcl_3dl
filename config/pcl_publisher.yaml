@@ -1,0 +1,17 @@
+pcl_publisher:
+  ros__parameters:
+    global_frame: "map"
+    map_rotate_around_x: 1.570796327
+    map_rotate_around_y: 0.0
+    map_rotate_around_z: 0.0
+    map_translate_x: 0.0
+    map_translate_y: 0.0
+    map_translate_z: 0.0
+    ground_rotate_around_x: 1.570796327
+    ground_rotate_around_y: 0.0
+    ground_rotate_around_z: 0.0
+    ground_translate_x: 0.0
+    ground_translate_y: 0.0
+    ground_translate_z: 0.0
+    map_down_sample: 0.5
+    ground_down_sample: 0.5
