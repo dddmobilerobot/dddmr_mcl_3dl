@@ -27,7 +27,7 @@ The package runs in the docker, so we need to build the image first. We support 
 ```
 cd ~
 git clone https://github.com/dddmobilerobot/dddmr_navigation.git
-cd ~/dddmr_navigation && git submodule update --init dddmr_docker src/dddmr_mcl_3dl src/dddmr_rviz_tools
+cd ~/dddmr_navigation && git submodule update --init dddmr_docker src/dddmr_mcl_3dl src/dddmr_rviz_tools src/dddmr_lego_loam_bor
 cd ~/dddmr_navigation/dddmr_docker/docker_file && ./build.bash
 ```
 ### 2. Download essential files
@@ -42,8 +42,19 @@ cd ~/dddmr_navigation/src/dddmr_mcl_3dl && ./download_files.bash
 ```
 cd ~/dddmr_navigation/dddmr_docker && ./run_demo.bash
 ```
-#### Play mapping using bag files
+##### 1. Launch everything in the container
 ```
 cd ~/dddmr_navigation && source /opt/ros/humble/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 source install/setup.bash
+ros2 launch mcl_3dl mcl_3dlXfeatureXbag.launch
+```
+##### 2. Play bag file in the container
+You will need to open another terminal and run following command to get into the container:
+```
+docker exec -it dddmr_ros2_dev bash
+```
+Once you are in the container, run:
+```
+cd ~/dddmr_navigation && source install/setup.bash
+cd ~/dddmr_bags && ros2 bag play benanli_detention_basin_localization
 ```
