@@ -31,14 +31,14 @@ cd ~/dddmr_navigation && git submodule update --init dddmr_docker src/dddmr_mcl_
 cd ~/dddmr_navigation/dddmr_docker/docker_file && ./build.bash
 ```
 ### 2. Download essential files
-Pose graph (3.3MB) and a bag file (1.2GB) will be download to run the demo. Noted that the bag file is not the one we used to generate the map, the pose graph is generated using another bag file.
+Pose graph (3.3MB) and a bag file (1.2GB) will be download to run the demo.
 ```
 cd ~/dddmr_navigation/src/dddmr_mcl_3dl && ./download_files.bash
 ```
 ### 3. Run demo
 #### Create a docker container
 > [!NOTE]
-> The following command will create an interactive docker container using the image we built. Then we can launch the demo in the container.
+> The following command will create an interactive docker container using the image we built. We will launch the demo manually in the container.
 ```
 cd ~/dddmr_navigation/dddmr_docker && ./run_demo.bash
 ```
@@ -49,7 +49,7 @@ source install/setup.bash
 ros2 launch mcl_3dl mcl_3dlXfeatureXbag.launch
 ```
 ##### 2. Play bag file in the container
-You will need to open another terminal and run following command to get into the container:
+We need another terminal to play the bag file. Open another terminal and run following command to get into the container:
 ```
 docker exec -it dddmr_ros2_dev bash
 ```
@@ -58,3 +58,7 @@ Once you are in the container, run:
 cd ~/dddmr_navigation && source install/setup.bash
 cd ~/dddmr_bags && ros2 bag play benanli_detention_basin_localization
 ```
+##### 3. Use Rviz2 tool to provide initial pose
+<p align='center'>
+    <img src="https://github.com/dddmobilerobot/dddmr_documentation_materials/blob/main/dddmr_mcl_3dl/mcl_initial_pose.png" width="640" height="400"/>
+</p>
