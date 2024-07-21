@@ -11,6 +11,10 @@ The original author deserve all the credits, we just stand on the shoulders of g
     <img src="https://github.com/dddmobilerobot/dddmr_documentation_materials/blob/main/dddmr_mcl_3dl/dddmr_mcl_3dl.gif" width="640" height="400"/>
 </p>
 
+<p align='center'>
+    <img src="https://github.com/dddmobilerobot/dddmr_documentation_materials/blob/main/dddmr_mcl_3dl/mcl_3dl_diagram.png" width="640" height="400"/>
+</p>
+
 The following features are provided and are different from original version:
 
 - ROS2 version of mcl_3dl, the algorithm is modified and designed for ground vehicles.
