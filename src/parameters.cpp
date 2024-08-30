@@ -170,12 +170,6 @@ Parameters::Parameters(const rclcpp::node_interfaces::NodeLoggingInterface::Shar
   euc_cluster_min_size_ = euc_cluster_min_size.as_int();
   RCLCPP_INFO(logger_->get_logger(), "euc_cluster_min_size: %d", euc_cluster_min_size_);
   
-  parameter_->declare_parameter("euc_cluster_max_size", rclcpp::ParameterValue(0));
-  rclcpp::Parameter euc_cluster_max_size = parameter_->get_parameter("euc_cluster_max_size");
-  euc_cluster_max_size_ = euc_cluster_max_size.as_int();
-  RCLCPP_INFO(logger_->get_logger(), "euc_cluster_max_size: %d", euc_cluster_max_size_);
-
-  
   
   //@For normal
   parameter_->declare_parameter("knn_num_of_ground_normals", rclcpp::ParameterValue(0));

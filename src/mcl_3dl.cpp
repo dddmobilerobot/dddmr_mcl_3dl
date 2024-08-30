@@ -409,7 +409,7 @@ void MCL3dlNode::cbLeGoFeatureCloud(const sensor_msgs::msg::PointCloud2::SharedP
     pcl::EuclideanClusterExtraction<mcl_3dl::pcl_t> ec_segmentation;
     ec_segmentation.setClusterTolerance (params_->euc_cluster_distance_);
     ec_segmentation.setMinClusterSize (params_->euc_cluster_min_size_);
-    ec_segmentation.setMaxClusterSize (params_->euc_cluster_max_size_);
+    ec_segmentation.setMaxClusterSize (pc_less_sharp->points.size());
     ec_segmentation.setSearchMethod (pc_kdtree);
     ec_segmentation.setInputCloud (pc_less_sharp);
     ec_segmentation.extract (cluster_indices_segmentation);

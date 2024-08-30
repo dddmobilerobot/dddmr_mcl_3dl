@@ -43,7 +43,6 @@ mcl_3dl:
 
     euc_cluster_distance: 0.8
     euc_cluster_min_size: 3
-    euc_cluster_max_size: 2400
 
     knn_num_of_ground_normals: 20
 
