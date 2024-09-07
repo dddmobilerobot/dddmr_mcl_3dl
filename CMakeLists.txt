@@ -21,6 +21,7 @@ find_package(message_filters REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(tf2_sensor_msgs REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(pcl_conversions REQUIRED)
@@ -43,6 +44,7 @@ set(dependencies
   tf2_ros
   tf2
   tf2_geometry_msgs
+  tf2_sensor_msgs
   tf2_eigen
   pluginlib
   pcl_conversions
