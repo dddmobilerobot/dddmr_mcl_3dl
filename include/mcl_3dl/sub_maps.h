@@ -44,6 +44,11 @@
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
+// This is for euclidean distance segmentation
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/filters/extract_indices.h>
+
 // chrono_literals handles user-defined time durations (e.g. 500ms) 
 using namespace std::chrono_literals;
 

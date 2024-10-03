@@ -159,16 +159,40 @@ void SubMaps::readPoseGraph(){
   RCLCPP_INFO(this->get_logger(), "\033[1;32mPose graph is loaded.\033[0m ");
 
   RCLCPP_INFO(this->get_logger(), "Map pointcloud size: %lu", map_cloud->points.size());
+
+  //@ euc to filter noisy data
+  pcl::PointCloud<pcl_t>::Ptr map_cloud_after_euc (new pcl::PointCloud<pcl_t>);
+  pcl::search::KdTree<pcl_t>::Ptr pc_kdtree (new pcl::search::KdTree<pcl_t>);
+  pc_kdtree->setInputCloud (map_cloud);
+
+  std::vector<pcl::PointIndices> cluster_indices_segmentation;
+  pcl::EuclideanClusterExtraction<pcl_t> ec_segmentation;
+  ec_segmentation.setClusterTolerance (0.2);
+  ec_segmentation.setMinClusterSize (1);
+  ec_segmentation.setMaxClusterSize (map_cloud->points.size());
+  ec_segmentation.setSearchMethod (pc_kdtree);
+  ec_segmentation.setInputCloud (map_cloud);
+  ec_segmentation.extract (cluster_indices_segmentation);
+  for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices_segmentation.begin (); it != cluster_indices_segmentation.end (); ++it)
+  {
+    if(it->indices.size()<10)
+      continue;
+
+    for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
+      map_cloud_after_euc->push_back(map_cloud->points[(*pit)]);
+    } 
+  }
+
   pcl::VoxelGrid<pcl_t> sor_map;
-  sor_map.setInputCloud (map_cloud);
+  sor_map.setInputCloud (map_cloud_after_euc);
   sor_map.setLeafSize (complete_map_voxel_size_, complete_map_voxel_size_, complete_map_voxel_size_);
-  sor_map.filter (*map_cloud);
-  map_cloud->is_dense = false;
+  sor_map.filter (*map_cloud_after_euc);
+  map_cloud_after_euc->is_dense = false;
   std::vector<int> ind_map;
-  pcl::removeNaNFromPointCloud(*map_cloud, *map_cloud, ind_map);
-  RCLCPP_INFO(this->get_logger(), "Map pointcloud size after down size: %lu", map_cloud->points.size());
+  pcl::removeNaNFromPointCloud(*map_cloud_after_euc, *map_cloud_after_euc, ind_map);
+  RCLCPP_INFO(this->get_logger(), "Map pointcloud size after down size: %lu", map_cloud_after_euc->points.size());
   sensor_msgs::msg::PointCloud2 map_pc;
-  pcl::toROSMsg(*map_cloud, map_pc);
+  pcl::toROSMsg(*map_cloud_after_euc, map_pc);
   map_pc.header.frame_id = "map";
   pub_map_->publish(map_pc);
 
