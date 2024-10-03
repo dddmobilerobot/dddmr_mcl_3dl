@@ -164,7 +164,6 @@ void SubMaps::readPoseGraph(){
   pcl::PointCloud<pcl_t>::Ptr map_cloud_after_euc (new pcl::PointCloud<pcl_t>);
   pcl::search::KdTree<pcl_t>::Ptr pc_kdtree (new pcl::search::KdTree<pcl_t>);
   pc_kdtree->setInputCloud (map_cloud);
-
   std::vector<pcl::PointIndices> cluster_indices_segmentation;
   pcl::EuclideanClusterExtraction<pcl_t> ec_segmentation;
   ec_segmentation.setClusterTolerance (0.2);
@@ -196,17 +195,110 @@ void SubMaps::readPoseGraph(){
   map_pc.header.frame_id = "map";
   pub_map_->publish(map_pc);
 
-  RCLCPP_INFO(this->get_logger(), "Ground pointcloud size: %lu", map_ground->points.size());
+  //@ inflate ground to deal with sparse issue
+  pcl::PointCloud<pcl_t>::Ptr ground_cloud_after_patched (new pcl::PointCloud<pcl_t>);
+  pcl::search::KdTree<pcl_t>::Ptr pc_ground_kdtree (new pcl::search::KdTree<pcl_t>);
+  pc_ground_kdtree->setInputCloud (map_ground);
+  for(auto it=map_ground->points.begin();it!=map_ground->points.end();it++){
+
+    //@ kd tree search nearby points
+    std::vector<int> pointIdxRadiusSearch;
+    std::vector<float> pointRadiusSquaredDistance;
+    if(pc_ground_kdtree->radiusSearch ((*it), 0.3, pointIdxRadiusSearch, pointRadiusSquaredDistance)<3){
+      ground_cloud_after_patched->push_back((*it));
+      continue;
+    }
+    
+    pcl::PointCloud<pcl_t>::Ptr a_ground_patch (new pcl::PointCloud<pcl_t>);
+    for(auto m_id=pointIdxRadiusSearch.begin(); m_id!=pointIdxRadiusSearch.end(); m_id++){
+      a_ground_patch->push_back(map_ground->points[(*m_id)]);
+    }
+    pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+    pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+    // Create the segmentation object
+    pcl::SACSegmentation<pcl_t> seg;
+    // Optional
+    seg.setOptimizeCoefficients (true);
+    // Mandatory
+    seg.setModelType (pcl::SACMODEL_PLANE);
+    seg.setMethodType (pcl::SAC_RANSAC);
+    seg.setDistanceThreshold (0.01);
+
+    seg.setInputCloud (a_ground_patch);
+    seg.segment (*inliers, *coefficients);
+    // rasanc Ax+By+Cz+D = 0
+    RCLCPP_DEBUG(this->get_logger(), "coef: %f, %f, %f, %f", coefficients->values[0], coefficients->values[1], coefficients->values[2], coefficients->values[3]);
+    /*Find min-max xy*/
+    pcl_t min_pt, max_pt;
+    pcl::getMinMax3D(*a_ground_patch, min_pt, max_pt);
+
+    for(double xi=min_pt.x; xi<max_pt.x; xi+=0.05){
+      for(double yi=min_pt.y; yi<max_pt.y; yi+=0.05){
+        pcl_t ipt;
+        ipt.x = xi;
+        ipt.y = yi;      
+        ipt.z = (-coefficients->values[3]-coefficients->values[0]*xi-coefficients->values[1]*yi)/coefficients->values[2];
+        double dz = (*it).z - ipt.z;
+        if(fabs(dz)>0.03)
+          continue;
+        ground_cloud_after_patched->push_back(ipt);
+      }
+    }
+  }
+  //@ patch along the pose
+  for(unsigned int it=0; it<poses_.points.size(); it++){
+    //@ something like 0_feature.pcd
+    geometry_msgs::msg::TransformStamped trans_m2b;
+    Eigen::Affine3d trans_m2b_af3;
+    trans_m2b.transform.translation.x = poses_.points[it].x;
+    trans_m2b.transform.translation.y = poses_.points[it].y;
+    trans_m2b.transform.translation.z = poses_.points[it].z;
+
+    //@ find closest point from the pose to ground, and shit its z
+    pcl_t pose_pt; pose_pt.x = poses_.points[it].x; pose_pt.y = poses_.points[it].y; pose_pt.z = poses_.points[it].z;
+    std::vector<int> pointIdxRadiusSearch;
+    std::vector<float> pointRadiusSquaredDistance;
+    if(pc_ground_kdtree->radiusSearch (pose_pt, 1.0, pointIdxRadiusSearch, pointRadiusSquaredDistance)<0){
+      continue;
+    }
+    trans_m2b.transform.translation.z = map_ground->points[pointIdxRadiusSearch[0]].z;
+
+    tf2::Quaternion q;
+    q.setRPY( poses_.points[it].roll, poses_.points[it].pitch, poses_.points[it].yaw);
+    trans_m2b.transform.rotation.x = q.x(); trans_m2b.transform.rotation.y = q.y();
+    trans_m2b.transform.rotation.z = q.z(); trans_m2b.transform.rotation.w = q.w();
+    trans_m2b_af3 = tf2::transformToEigen(trans_m2b);
+
+    tf2::Quaternion rotation(trans_m2b.transform.rotation.x, trans_m2b.transform.rotation.y, trans_m2b.transform.rotation.z, trans_m2b.transform.rotation.w);
+    tf2::Vector3 vector(0, 0, 1);
+    tf2::Vector3 pose_normal = tf2::quatRotate(rotation, vector);
+
+    double d = -trans_m2b.transform.translation.x*pose_normal[0]-trans_m2b.transform.translation.y*pose_normal[1]-trans_m2b.transform.translation.z*pose_normal[2];
+    for(double xi=poses_.points[it].x-0.5; xi<poses_.points[it].x+0.5; xi+=0.05){
+      for(double yi=poses_.points[it].y-0.5; yi<poses_.points[it].y+0.5; yi+=0.05){
+        pcl_t ipt;
+        ipt.x = xi;
+        ipt.y = yi;      
+        ipt.z = (-d-pose_normal[0]*xi-pose_normal[1]*yi)/pose_normal[2];
+        double dz = trans_m2b.transform.translation.z - ipt.z;
+        if(fabs(dz)>0.03)
+          continue;
+        ground_cloud_after_patched->push_back(ipt);
+      }
+    }
+  }
+
+  RCLCPP_INFO(this->get_logger(), "Ground pointcloud size: %lu", ground_cloud_after_patched->points.size());
   pcl::VoxelGrid<pcl_t> sor_ground;
-  sor_ground.setInputCloud (map_ground);
+  sor_ground.setInputCloud (ground_cloud_after_patched);
   sor_ground.setLeafSize (complete_map_voxel_size_, complete_map_voxel_size_, complete_map_voxel_size_);
-  sor_ground.filter (*map_ground);
-  map_ground->is_dense = false;
+  sor_ground.filter (*ground_cloud_after_patched);
+  ground_cloud_after_patched->is_dense = false;
   std::vector<int> ind_ground;
-  pcl::removeNaNFromPointCloud(*map_ground, *map_ground, ind_ground);
-  RCLCPP_INFO(this->get_logger(), "Ground pointcloud size after down size: %lu", map_ground->points.size());
+  pcl::removeNaNFromPointCloud(*ground_cloud_after_patched, *ground_cloud_after_patched, ind_ground);
+  RCLCPP_INFO(this->get_logger(), "Ground pointcloud size after down size: %lu", ground_cloud_after_patched->points.size());
   sensor_msgs::msg::PointCloud2 ground_pc;
-  pcl::toROSMsg(*map_ground, ground_pc);
+  pcl::toROSMsg(*ground_cloud_after_patched, ground_pc);
   ground_pc.header.frame_id = "map";
   pub_ground_->publish(ground_pc);
   
