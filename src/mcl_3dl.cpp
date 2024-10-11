@@ -719,42 +719,47 @@ void MCL3dlNode::cbPosition(const geometry_msgs::msg::PoseWithCovarianceStamped:
     RCLCPP_ERROR(this->get_logger(), "Discarded invalid initialpose. The orientation must be unit quaternion.");
     return;
   }
+  
+  if(msg->header.frame_id!=params_->frame_ids_["map"]){
+    RCLCPP_ERROR(this->get_logger(), "Discarded initialpose. The frame_id should be: %s", params_->frame_ids_["map"].c_str());
+    return;
+  }
 
   sub_maps_->setInitialPose(*msg);
   while(rclcpp::ok() && !sub_maps_->isWarmUpReady()){
 
   }
   sub_maps_->swapKdTree();
-  geometry_msgs::msg::PoseStamped pose_in, pose;
-  pose_in.header = msg->header;
-  pose_in.pose = msg->pose.pose;
-  try
-  {
-
-    const geometry_msgs::msg::TransformStamped trans = tfbuf_->lookupTransform(
-          params_->frame_ids_["map"], pose_in.header.frame_id, tf2::TimePointZero);
-    tf2::doTransform(pose_in, pose, trans);
-  }
-  catch (tf2::TransformException& e)
-  {
-    return;
-  }
+  
   //@Try to find the ground
-  mcl_3dl::pcl_t initial_pose;
+  geometry_msgs::msg::PoseStamped pose;
+  mcl_3dl::pcl_t initial_pose_pt;
   std::vector<int> pointIdxRadiusSearch;
   std::vector<float> pointRadiusSquaredDistance;
-  initial_pose.x = pose.pose.position.x;
-  initial_pose.y = pose.pose.position.y;
+  initial_pose_pt.x = msg->pose.pose.position.x;
+  initial_pose_pt.y = msg->pose.pose.position.y;
+  initial_pose_pt.z = msg->pose.pose.position.z;
+  pose.pose.position.x = initial_pose_pt.x;
+  pose.pose.position.y = initial_pose_pt.y;
 
-  for(double z=pose.pose.position.z; z>-10;z-=0.1){
-    initial_pose.z = z;
-    if(sub_maps_->kdtree_ground_current_.radiusSearch(initial_pose, 0.3, pointIdxRadiusSearch, pointRadiusSquaredDistance,0)>0)
+  for(double z=0.0; z<5.0;z+=0.1){
+    initial_pose_pt.z = msg->pose.pose.position.z + z;
+    if(sub_maps_->kdtree_ground_current_.radiusSearch(initial_pose_pt, 0.3, pointIdxRadiusSearch, pointRadiusSquaredDistance, 1)>0)
     {
       pose.pose.position.z = sub_maps_->ground_current_->points[pointIdxRadiusSearch[0]].z;
+      RCLCPP_INFO(this->get_logger(), "Found ground at z: %.2f", pose.pose.position.z);
       break;
     }
-  } 
+    initial_pose_pt.z = msg->pose.pose.position.z - z;
+    if(sub_maps_->kdtree_ground_current_.radiusSearch(initial_pose_pt, 0.3, pointIdxRadiusSearch, pointRadiusSquaredDistance, 1)>0)
+    {
+      pose.pose.position.z = sub_maps_->ground_current_->points[pointIdxRadiusSearch[0]].z;
+      RCLCPP_INFO(this->get_logger(), "Found ground at z: %.2f", pose.pose.position.z);
+      break;
+    }
+  }
   
+  RCLCPP_INFO(this->get_logger(), "Set initial pose at: %.2f, %.2f, %.2f", pose.pose.position.x, pose.pose.position.y, pose.pose.position.z);
   const State6DOF mean(Vec3(pose.pose.position.x, pose.pose.position.y, pose.pose.position.z),
                         Quat(pose.pose.orientation.x,
                             pose.pose.orientation.y,
