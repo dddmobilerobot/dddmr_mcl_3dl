@@ -204,7 +204,7 @@ void SubMaps::readPoseGraph(){
     //@ kd tree search nearby points
     std::vector<int> pointIdxRadiusSearch;
     std::vector<float> pointRadiusSquaredDistance;
-    if(pc_ground_kdtree->radiusSearch ((*it), 0.3, pointIdxRadiusSearch, pointRadiusSquaredDistance)<3){
+    if(pc_ground_kdtree->radiusSearch ((*it), 0.3, pointIdxRadiusSearch, pointRadiusSquaredDistance)<10){
       ground_cloud_after_patched->push_back((*it));
       continue;
     }

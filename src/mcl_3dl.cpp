@@ -741,7 +741,8 @@ void MCL3dlNode::cbPosition(const geometry_msgs::msg::PoseWithCovarianceStamped:
   initial_pose_pt.z = msg->pose.pose.position.z;
   pose.pose.position.x = initial_pose_pt.x;
   pose.pose.position.y = initial_pose_pt.y;
-
+  pose.pose.orientation = msg->pose.pose.orientation;
+  
   for(double z=0.0; z<5.0;z+=0.1){
     initial_pose_pt.z = msg->pose.pose.position.z + z;
     if(sub_maps_->kdtree_ground_current_.radiusSearch(initial_pose_pt, 0.3, pointIdxRadiusSearch, pointRadiusSquaredDistance, 1)>0)
